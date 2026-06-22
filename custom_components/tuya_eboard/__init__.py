@@ -31,6 +31,9 @@ async def async_setup_entry(
     # Start listening for advertisements only after platforms have subscribed, so the
     # first poll's snapshot reaches the entities.
     entry.async_on_unload(coordinator.async_start())
+    # The coordinator runs a self-rescheduling presence check (only while the board is
+    # around); make sure any pending one is cancelled on unload.
+    entry.async_on_unload(coordinator.async_stop_presence_tracking)
     return True
 
 

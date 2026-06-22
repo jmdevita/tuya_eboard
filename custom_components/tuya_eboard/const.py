@@ -24,3 +24,10 @@ POLL_INTERVAL_SECONDS: Final = 300.0
 
 # Seconds to collect the proactive DP dump after connecting (passed to read_all_dps).
 SETTLE_SECONDS: Final = 5.0
+
+# Presence: an awake board advertises many times/sec, so if we haven't heard it within
+# this window it's asleep/out of range. (HA's own unavailable tracking is far laggier,
+# which is why `present` tracks advertisements directly.)
+PRESENCE_TIMEOUT_SECONDS: Final = 90.0
+# How often to re-evaluate presence so `present` flips off without a new advertisement.
+PRESENCE_CHECK_SECONDS: Final = 30.0

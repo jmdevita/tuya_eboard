@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
-    SensorEntity,
     SensorEntityDescription,
     SensorStateClass,
 )
@@ -65,6 +65,7 @@ SENSORS: tuple[EboardSensorDescription, ...] = (
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,  # show 50.2 V, not 50
         value_fn=_scaled(20, 0.1),  # DP20 voltage_current ÷10 (12S, full ≈ 50.2 V)
     ),
     EboardSensorDescription(
@@ -123,8 +124,13 @@ async def async_setup_entry(
     )
 
 
-class TuyaEboardSensor(TuyaEboardEntity, SensorEntity):
-    """A read-only e-board sensor over the DP snapshot."""
+class TuyaEboardSensor(TuyaEboardEntity, RestoreSensor):
+    """A read-only e-board sensor over the DP snapshot.
+
+    Restores its last value across restarts so the dashboard shows last-known data
+    (with an honest ``last_seen``) instead of going unavailable until the board — which
+    is asleep most of the time — is next read.
+    """
 
     entity_description: EboardSensorDescription
 
@@ -137,9 +143,19 @@ class TuyaEboardSensor(TuyaEboardEntity, SensorEntity):
     ) -> None:
         super().__init__(coordinator, address, model, description.key)
         self.entity_description = description
+        self._restored: StateType | datetime = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            self._restored = last.native_value
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.data is not None or self._restored is not None
 
     @property
     def native_value(self) -> StateType | datetime:
-        if (snapshot := self.coordinator.data) is None:
-            return None
-        return self.entity_description.value_fn(snapshot)
+        if (snapshot := self.coordinator.data) is not None:
+            return self.entity_description.value_fn(snapshot)
+        return self._restored

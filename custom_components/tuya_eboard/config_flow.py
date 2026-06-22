@@ -87,11 +87,10 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Scan for advertising boards; re-prompt (no dead-end) if none are found."""
         # Distinguish "no Bluetooth adapter at all" from "board not found" — they need
-        # different advice (add an adapter/proxy vs. wake the board).
+        # different advice (add an adapter/proxy vs. wake the board). Each re-prompt is
+        # its own step (a shown menu's step_id must have a matching handler method).
         if bluetooth.async_scanner_count(self.hass, connectable=True) == 0:
-            return self.async_show_menu(
-                step_id="no_bluetooth", menu_options=["scan"]
-            )
+            return await self.async_step_no_bluetooth()
         self._discovered = {
             info.address: info
             for info in bluetooth.async_discovered_service_info(
@@ -101,8 +100,20 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
             and info.address not in self._async_current_ids()
         }
         if not self._discovered:
-            return self.async_show_menu(step_id="no_devices", menu_options=["scan"])
+            return await self.async_step_no_devices()
         return await self.async_step_pick()
+
+    async def async_step_no_bluetooth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """No Bluetooth adapter available — let the user fix it and rescan."""
+        return self.async_show_menu(step_id="no_bluetooth", menu_options=["scan"])
+
+    async def async_step_no_devices(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """No board advertising — let the user wake it and rescan."""
+        return self.async_show_menu(step_id="no_devices", menu_options=["scan"])
 
     async def async_step_pick(
         self, user_input: dict[str, Any] | None = None
