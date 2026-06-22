@@ -24,10 +24,16 @@ from homeassistant.components.bluetooth.active_update_coordinator import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, CoreState, HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    DOMAIN,
+    DP_BATTERY,
+    DP_ODOMETER,
+    DP_VOLTAGE,
+    EVENT_RIDE_COMPLETED,
     POLL_INTERVAL_SECONDS,
     PRESENCE_CHECK_SECONDS,
     PRESENCE_TIMEOUT_SECONDS,
@@ -45,6 +51,11 @@ class EboardSnapshot:
 
     dps: dict[int, DataPoint]
     last_seen: datetime
+
+
+def _dp_int(dps: dict[int, DataPoint], dp_id: int) -> int | None:
+    dp = dps.get(dp_id)
+    return dp.value if dp is not None and isinstance(dp.value, int) else None
 
 
 class TuyaEboardCoordinator(ActiveBluetoothDataUpdateCoordinator[EboardSnapshot]):
@@ -168,6 +179,57 @@ class TuyaEboardCoordinator(ActiveBluetoothDataUpdateCoordinator[EboardSnapshot]
         # datapoints on a given read, so replacing wholesale would drop the unreported
         # ones and flip their entities to "unknown". Accumulate instead: a DP persists
         # once seen and is updated whenever the board re-reports it.
-        merged = dict(self.data.dps) if self.data is not None else {}
+        previous = self.data
+        merged = dict(previous.dps) if previous is not None else {}
         merged.update({dp.id: dp for dp in dps})
+        if previous is not None:
+            self._async_fire_ride_event(previous.dps, merged)
         return EboardSnapshot(dps=merged, last_seen=dt_util.utcnow())
+
+    @callback
+    def _async_fire_ride_event(
+        self, before: dict[int, DataPoint], after: dict[int, DataPoint]
+    ) -> None:
+        """Fire ``tuya_eboard_ride_completed`` if the odometer advanced.
+
+        The board is only reachable at the ends of a ride (power-on / arrival), so an
+        odometer increase between two reads *is* a completed ride. We carry the full
+        delta in the event so blueprints can journal it without re-deriving anything.
+        DP5/DP6 (per-trip) reset on sleep and are unreliable across power cycles, so
+        distance is the cumulative-odometer delta (DP12).
+        """
+        odo_before = _dp_int(before, DP_ODOMETER)
+        odo_after = _dp_int(after, DP_ODOMETER)
+        if odo_before is None or odo_after is None or odo_after <= odo_before:
+            return
+
+        # DP12 is km x10. mi = (delta / 10) / 1.609 = delta / 16.09.
+        delta = odo_after - odo_before
+        soc_before = _dp_int(before, DP_BATTERY)
+        soc_after = _dp_int(after, DP_BATTERY)
+        v_before = _dp_int(before, DP_VOLTAGE)
+        v_after = _dp_int(after, DP_VOLTAGE)
+
+        dev_reg = dr.async_get(self.hass)
+        device = dev_reg.async_get_device(identifiers={(DOMAIN, self.address)})
+
+        self.hass.bus.async_fire(
+            EVENT_RIDE_COMPLETED,
+            {
+                "device_id": device.id if device else None,
+                "name": device.name_by_user or device.name if device else None,
+                "address": self.address,
+                "distance_km": round(delta / 10, 2),
+                "distance_mi": round(delta / 16.09, 2),
+                "odometer_km": round(odo_after / 10, 2),
+                "battery_used": (
+                    soc_before - soc_after
+                    if soc_before is not None and soc_after is not None
+                    else None
+                ),
+                "battery_start": soc_before,
+                "battery_end": soc_after,
+                "voltage_start": None if v_before is None else round(v_before / 10, 1),
+                "voltage_end": None if v_after is None else round(v_after / 10, 1),
+            },
+        )

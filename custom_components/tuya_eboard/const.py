@@ -23,6 +23,16 @@ CONF_REGION: Final = "region"
 # Tuya BLE v4 service advertised by these boards (matches the manifest matcher).
 SERVICE_UUID_FD50: Final = "0000fd50-0000-1000-8000-00805f9b34fb"
 
+# Fired when the odometer advances between two reads (a completed ride). The event
+# carries the ride delta so user-space blueprints/automations can journal it without
+# re-deriving anything. See blueprints/automation/ride_journal.yaml.
+EVENT_RIDE_COMPLETED: Final = "tuya_eboard_ride_completed"
+
+# DP ids used for ride derivation (kept in sync with sensor.py value_fns).
+DP_BATTERY: Final = 3  # battery_percentage (%)
+DP_ODOMETER: Final = 12  # mileage_total (km x10, cumulative)
+DP_VOLTAGE: Final = 20  # voltage_current (V x10)
+
 # Poll cadence: the board is reachable only when on + remote awake (ride boundaries). We
 # listen passively and connect on demand; don't reconnect more often than this.
 POLL_INTERVAL_SECONDS: Final = 300.0

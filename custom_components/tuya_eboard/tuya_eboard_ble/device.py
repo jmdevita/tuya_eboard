@@ -37,10 +37,12 @@ TUYA_SERVICE_FRAGMENTS = ("a201", "fd50")
 # Safety allowlist for writes: dp_id -> (DataPointType, validator(value)->bool).
 # EMPTY until the DP map is discovered & confirmed via the app oracle (§5 Ph.2).
 # While empty, every write is refused - which is the correct default.
-WRITE_ALLOWLIST: dict[int, tuple[DataPointType, "object"]] = {}
+WRITE_ALLOWLIST: dict[int, tuple[DataPointType, object]] = {}
 
 
-def _matches(creds: TuyaBLEDeviceCredentials, dev: BLEDevice, adv: AdvertisementData) -> bool:
+def _matches(
+    creds: TuyaBLEDeviceCredentials, dev: BLEDevice, adv: AdvertisementData
+) -> bool:
     """Is this advertisement our board?
 
     Linux/BlueZ exposes the real MAC as ``dev.address``; macOS does not, so we
@@ -135,18 +137,6 @@ class TuyaEboardDevice:
     def generation(self):
         return self._generation
 
-    @classmethod
-    async def discover_and_create(
-        cls,
-        creds: TuyaBLEDeviceCredentials,
-        mac: str | None = None,
-        *,
-        read_only: bool = True,
-        timeout: float = 15.0,
-    ) -> "TuyaEboardDevice":
-        ble_device, adv = await discover_board(creds, mac=mac, timeout=timeout)
-        return cls(creds, ble_device, adv, read_only=read_only)
-
     @property
     def inner(self) -> TuyaBLEDevice:
         return self._inner
@@ -207,9 +197,6 @@ class TuyaEboardDevice:
             raise ValueError(f"Value {value!r} out of safe range for DP {dp_id}.")
         dp = self._inner.datapoints.get_or_create(dp_id, _vendor_type(dp_type))
         await dp.set_value(encode_value(dp_type, value))
-
-    async def stop(self) -> None:
-        await self._inner.stop()
 
 
 def _vendor_type(t: DataPointType):

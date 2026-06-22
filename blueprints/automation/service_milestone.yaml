@@ -1,0 +1,90 @@
+blueprint:
+  name: Tuya E-Board Service Milestone
+  description: >
+    Reminds you to service the board every set distance. It watches the odometer and
+    fires each time the total crosses a multiple of your service interval (e.g. every
+    500), so you get a maintenance nudge for bearings / belt / tire without tracking
+    mileage yourself. Creates a persistent notification (and an optional push).
+  domain: automation
+  source_url: https://github.com/jmdevita/tuya_eboard/blob/main/blueprints/automation/service_milestone.yaml
+  input:
+    odometer:
+      name: Odometer sensor
+      description: Your board's Odometer sensor (the cumulative-distance one, not last trip).
+      selector:
+        entity:
+          integration: tuya_eboard
+          device_class: distance
+    service_interval:
+      name: Service interval
+      description: >
+        Distance between reminders, in the same unit your odometer shows (miles or
+        kilometers). You'll be nudged each time the odometer passes a multiple of this.
+      default: 500
+      selector:
+        number:
+          min: 10
+          max: 5000
+          step: 10
+          mode: box
+    service_task:
+      name: Reminder text
+      description: What to check when a milestone is reached.
+      default: "Service check: bearings, belt tension, and tire wear."
+      selector:
+        text:
+          multiline: true
+    notify_service:
+      name: Notification service (optional)
+      description: >
+        A notify service for a push, e.g. `notify.mobile_app_phone`. Leave blank for a
+        persistent notification only.
+      default: ""
+      selector:
+        text:
+
+mode: queued
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input odometer
+
+variables:
+  odometer_entity: !input odometer
+  interval: !input service_interval
+  task: !input service_task
+  notify_service: !input notify_service
+  unit: "{{ state_attr(odometer_entity, 'unit_of_measurement') or '' }}"
+
+condition:
+  # Fire only when the odometer crosses into a new interval band (floor(new/interval)
+  # increased), ignoring restarts / unavailable states.
+  - condition: template
+    value_template: >
+      {% set f = trigger.from_state.state %}
+      {% set t = trigger.to_state.state %}
+      {% set n = interval | float(0) %}
+      {{ f not in ['unknown', 'unavailable', 'none', none]
+         and t not in ['unknown', 'unavailable', 'none', none]
+         and n > 0
+         and ((t | float(0)) // n) > ((f | float(0)) // n) }}
+
+action:
+  - variables:
+      milestone: "{{ (((trigger.to_state.state | float(0)) // (interval | float)) * (interval | float)) | round(0) }}"
+      message: "Odometer passed {{ milestone }} {{ unit }}. {{ task }}"
+  - service: persistent_notification.create
+    data:
+      title: "E-board service due"
+      notification_id: "tuya_eboard_service_{{ milestone }}"
+      message: "{{ message }}"
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ notify_service != '' }}"
+        sequence:
+          - service: "{{ notify_service }}"
+            data:
+              title: "E-board service due"
+              message: "{{ message }}"

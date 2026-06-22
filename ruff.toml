@@ -1,9 +1,8 @@
-# Lint config for the HA integration glue code. The vendored library
-# (custom_components/tuya_eboard/tuya_eboard_ble) is a mirror of the root package and is
-# linted/tested there, so it's excluded here.
+# Lint config for the integration + its bundled library. Only the borrowed Tuya BLE
+# transport under _vendor/ is excluded - it's third-party code kept close to upstream.
 target-version = "py312"
 line-length = 88
-extend-exclude = ["custom_components/tuya_eboard/tuya_eboard_ble"]
+extend-exclude = ["custom_components/tuya_eboard/tuya_eboard_ble/_vendor"]
 
 [lint]
 select = ["E", "F", "W", "I", "UP", "B"]

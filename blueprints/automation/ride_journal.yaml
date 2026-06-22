@@ -1,0 +1,76 @@
+blueprint:
+  name: Tuya E-Board Ride Journal
+  description: >
+    Logs a Logbook entry (and an optional notification) each time your Tuya e-board
+    finishes a ride. It triggers on the `tuya_eboard_ride_completed` event the
+    integration fires when the board's odometer advances between two reads, so the
+    ride distance, battery used, and voltage drop are already computed for you.
+  domain: automation
+  source_url: https://github.com/jmdevita/tuya_eboard/blob/main/blueprints/automation/ride_journal.yaml
+  input:
+    board:
+      name: E-board
+      description: The Tuya e-board to journal rides for.
+      selector:
+        device:
+          integration: tuya_eboard
+    distance_unit:
+      name: Distance unit
+      description: Which unit to show in the journal entry.
+      default: mi
+      selector:
+        select:
+          options:
+            - label: Miles
+              value: mi
+            - label: Kilometers
+              value: km
+    notify_service:
+      name: Notification service (optional)
+      description: >
+        A notify service to also send a push, e.g. `notify.mobile_app_phone`.
+        Leave blank to only write a Logbook entry.
+      default: ""
+      selector:
+        text:
+
+mode: queued
+max_exceeded: silent
+
+trigger:
+  - platform: event
+    event_type: tuya_eboard_ride_completed
+
+variables:
+  board: !input board
+  unit: !input distance_unit
+  notify_service: !input notify_service
+
+condition:
+  - condition: template
+    value_template: "{{ trigger.event.data.device_id == board }}"
+
+action:
+  - variables:
+      distance: >
+        {{ trigger.event.data.distance_mi if unit == 'mi'
+           else trigger.event.data.distance_km }}
+      battery_used: "{{ trigger.event.data.battery_used }}"
+      summary: >
+        {{ distance }} {{ unit }}
+        {%- if battery_used not in (none, 'None') %}, used {{ battery_used }}%{% endif %}
+        {%- if trigger.event.data.voltage_end is not none %}
+          ({{ trigger.event.data.voltage_start }}V to {{ trigger.event.data.voltage_end }}V){% endif %}
+  - service: logbook.log
+    data:
+      name: "{{ trigger.event.data.name or 'E-board' }} ride"
+      message: "{{ summary }}"
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ notify_service != '' }}"
+        sequence:
+          - service: "{{ notify_service }}"
+            data:
+              title: "Ride complete"
+              message: "{{ summary }}"

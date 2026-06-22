@@ -53,22 +53,6 @@ _LOGGER = logging.getLogger(__name__)
 TUYA_DOCS_URL = "https://www.home-assistant.io/integrations/tuya/"
 
 
-def _prefill() -> dict[str, str]:
-    """Best-effort defaults from a local devices.json (dev only; absent in HA)."""
-    try:
-        from .tuya_eboard_ble.credentials import load_credentials
-
-        creds = load_credentials()
-    except Exception:  # noqa: BLE001 - no devices.json in a normal install; that's fine
-        return {}
-    return {
-        CONF_LOCAL_KEY: creds.local_key or "",
-        CONF_DEVICE_ID: creds.device_id or "",
-        CONF_UUID: creds.uuid or "",
-        CONF_PRODUCT_ID: creds.product_id or "",
-    }
-
-
 class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Tuya E-Board (BLE)."""
 
@@ -291,21 +275,14 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
             errors["base"] = error
 
-        pre = _prefill()
         return self.async_show_form(
             step_id="credentials",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        CONF_LOCAL_KEY, default=pre.get(CONF_LOCAL_KEY, "")
-                    ): str,
-                    vol.Required(
-                        CONF_DEVICE_ID, default=pre.get(CONF_DEVICE_ID, "")
-                    ): str,
-                    vol.Required(CONF_UUID, default=pre.get(CONF_UUID, "")): str,
-                    vol.Optional(
-                        CONF_PRODUCT_ID, default=pre.get(CONF_PRODUCT_ID, "")
-                    ): str,
+                    vol.Required(CONF_LOCAL_KEY): str,
+                    vol.Required(CONF_DEVICE_ID): str,
+                    vol.Required(CONF_UUID): str,
+                    vol.Optional(CONF_PRODUCT_ID): str,
                 }
             ),
             errors=errors,
