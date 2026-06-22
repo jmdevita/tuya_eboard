@@ -2,4 +2,4 @@ bleak>=3.0.2
 bleak-retry-connector>=4.6.1
 pycryptodome>=3.23.0
 pyyaml>=6.0.3
-tinytuya>=1.13
+tinytuya>=1.18.1
