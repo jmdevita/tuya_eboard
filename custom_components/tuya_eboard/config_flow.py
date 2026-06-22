@@ -48,6 +48,10 @@ from .tuya_eboard_ble.device import TuyaEboardDevice
 
 _LOGGER = logging.getLogger(__name__)
 
+# Linked from the cloud-login step (HA requires URLs via description_placeholders,
+# not inline in strings.json). Points at the official Tuya project-setup walkthrough.
+TUYA_DOCS_URL = "https://www.home-assistant.io/integrations/tuya/"
+
 
 def _prefill() -> dict[str, str]:
     """Best-effort defaults from a local devices.json (dev only; absent in HA)."""
@@ -214,9 +218,7 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors or {},
-            description_placeholders={
-                "name": self._discovery.name if self._discovery else "Tuya E-Board"
-            },
+            description_placeholders={"docs_url": TUYA_DOCS_URL},
         )
 
     async def async_step_cloud_pick(

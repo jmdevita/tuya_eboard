@@ -40,7 +40,7 @@
       },
       "cloud": {
         "title": "Tuya cloud login",
-        "description": "Enter your Tuya IoT Platform project credentials. Home Assistant lists the devices in your project and pulls this board's local key automatically. Need a project? Follow the [Home Assistant Tuya integration setup](https://www.home-assistant.io/integrations/tuya/) to create one and get these values.",
+        "description": "Enter your Tuya IoT Platform project credentials. Home Assistant lists the devices in your project and pulls this board's local key automatically. Need a project? Follow the [Home Assistant Tuya integration setup]({docs_url}) to create one and get these values.",
         "data": {
           "access_id": "Access ID / Client ID",
           "access_secret": "Access Secret / Client Secret",
