@@ -3,7 +3,7 @@ which protocol version / write type?
 
 Sends FUN_SENDER_DEVICE_INFO (the first handshake packet) encrypted with the
 login key, trying protocol versions 2/3/4 and both write types, printing any
-raw notification the board sends back. Pure diagnosis — no DP writes.
+raw notification the board sends back. Pure diagnosis - no DP writes.
 
   silence on all  -> request malformed for this firmware (key? security flag?)
   bytes on one    -> that's our protocol version; parser is next

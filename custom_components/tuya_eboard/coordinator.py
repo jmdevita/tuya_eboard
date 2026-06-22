@@ -1,7 +1,7 @@
 """Advertisement-triggered, connect-on-demand coordinator for the e-board.
 
 The board (an ESC) is only reachable over BLE when it's powered on and the remote is
-awake — the two ends of a ride. We therefore do NOT poll in a loop: HA's passive scanner
+awake - the two ends of a ride. We therefore do NOT poll in a loop: HA's passive scanner
 notices the board advertise, ``_needs_poll`` gates a connect, and ``_async_update`` runs
 the existing ``TuyaEboardDevice.read_all_dps()`` snapshot (connect → handshake → dump →
 disconnect). Between reads the last snapshot persists with a ``last_seen`` timestamp.

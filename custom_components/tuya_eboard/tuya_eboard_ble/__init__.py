@@ -1,4 +1,4 @@
-"""tuya_eboard_ble — a board-agnostic Tuya BLE client for e-board ESCs.
+"""tuya_eboard_ble - a board-agnostic Tuya BLE client for e-board ESCs.
 
 Snapshot+delta model: connect-on-demand, read DPs, disconnect. The Tuya BLE
 crypto/handshake is borrowed verbatim from PlusPlus-ua/ha_tuya_ble (vendored

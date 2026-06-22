@@ -1,6 +1,6 @@
 """Pull the Tuya Cloud 'Things Data Model' (DP id -> code/type/scale/unit) for
 the device, to compare deterministic cloud labels against our hand-mapped DPs.
-Cloud call only — no board needed."""
+Cloud call only - no board needed."""
 
 import json
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""tuya-eboard CLI — iterate the DP map straight against the board, no HA involved.
+"""tuya-eboard CLI - iterate the DP map straight against the board, no HA involved.
 
     python tools/cli.py dump                 # one connect, print all DPs
     python tools/cli.py dump --save captures # also freeze a fixture
@@ -34,7 +34,7 @@ def _ts() -> str:
 
 def _print_dps(dps: list[DataPoint]) -> None:
     if not dps:
-        print("  (no datapoints reported — board may need a moment, or try a "
+        print("  (no datapoints reported - board may need a moment, or try a "
               "longer --settle)")
         return
     print(f"  {'id':>3}  {'type':<7}  {'value':<24}  raw")

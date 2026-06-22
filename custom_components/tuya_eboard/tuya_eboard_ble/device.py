@@ -2,9 +2,9 @@
 
 Wraps the vendored ``TuyaBLEDevice`` with:
   * BLE discovery that works on macOS (CoreBluetooth hides the MAC) and Linux.
-  * ``read_all_dps()`` — connect, let the board dump its cached DPs, snapshot,
+  * ``read_all_dps()`` - connect, let the board dump its cached DPs, snapshot,
     disconnect.
-  * ``write_dp()`` — refused unless explicitly opted out of read-only AND the DP
+  * ``write_dp()`` - refused unless explicitly opted out of read-only AND the DP
     is on a known-safe allowlist AND the value is in range. A motor ESC is not a
     light bulb; default is read-only.
 """
@@ -36,7 +36,7 @@ TUYA_SERVICE_FRAGMENTS = ("a201", "fd50")
 
 # Safety allowlist for writes: dp_id -> (DataPointType, validator(value)->bool).
 # EMPTY until the DP map is discovered & confirmed via the app oracle (§5 Ph.2).
-# While empty, every write is refused — which is the correct default.
+# While empty, every write is refused - which is the correct default.
 WRITE_ALLOWLIST: dict[int, tuple[DataPointType, "object"]] = {}
 
 
@@ -155,9 +155,9 @@ class TuyaEboardDevice:
         """Convert the vendored datapoint cache into our pure DataPoint list."""
         dps: list[DataPoint] = []
         store = self._inner.datapoints
-        for dp_id in sorted(store._datapoints):  # noqa: SLF001 — read-only access
+        for dp_id in sorted(store._datapoints):  # noqa: SLF001 - read-only access
             v = store[dp_id]
-            raw = v._get_value()  # noqa: SLF001 — exact wire bytes
+            raw = v._get_value()  # noqa: SLF001 - exact wire bytes
             dps.append(
                 DataPoint(
                     id=v.id,
@@ -181,7 +181,7 @@ class TuyaEboardDevice:
             await self._inner.stop()
 
     async def write_dp(self, dp_id: int, value: object) -> None:
-        """Write a config DP — guarded by several independent gates."""
+        """Write a config DP - guarded by several independent gates."""
         if self.read_only:
             raise PermissionError(
                 "Device is read-only. Construct with read_only=False to enable "
@@ -189,7 +189,7 @@ class TuyaEboardDevice:
             )
         # The vendored protocol only implements DP *sending* for v3, and even that
         # uses a 1-byte length (wrong for v4's 2-byte format). So writes are not
-        # actually functional on v4 yet — fail clearly rather than emit a malformed
+        # actually functional on v4 yet - fail clearly rather than emit a malformed
         # frame to a motor controller or surface a cryptic TuyaBLEDeviceError.
         if self._generation.name == "v4":
             raise NotImplementedError(

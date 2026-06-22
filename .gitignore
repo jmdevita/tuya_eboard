@@ -1,4 +1,4 @@
-# Tuya secrets — NEVER commit these
+# Tuya secrets - NEVER commit these
 devices.json
 tuya-raw.json
 tinytuya.json
@@ -18,5 +18,5 @@ __pycache__/
 captures/
 *.cap
 
-# Internal design / research notes — kept local
+# Internal design / research notes - kept local
 docs/

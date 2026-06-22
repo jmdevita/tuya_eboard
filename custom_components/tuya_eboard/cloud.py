@@ -1,11 +1,11 @@
-"""Tuya cloud access for onboarding — list a project's devices + pull local keys.
+"""Tuya cloud access for onboarding - list a project's devices + pull local keys.
 
 Thin async wrapper over ``tinytuya.Cloud`` (the same client ``tools/pull_schema.py``
 uses). Used only by the config flow / reauth, never in the BLE hot path. The cloud call
 is blocking (``requests``), so it runs in an executor.
 
 The user supplies Tuya IoT *project* credentials (access id + secret + region); the
-local key only exists in the cloud, so a project is unavoidable — but this replaces the
+local key only exists in the cloud, so a project is unavoidable - but this replaces the
 manual ``tinytuya wizard`` + copy-paste with "log in, pick your board".
 """
 
@@ -63,7 +63,7 @@ def match_by_mac(devices: list[CloudDevice], ble_address: str) -> list[CloudDevi
     """Return cloud devices whose MAC matches the discovered BLE address.
 
     On Linux/Pi hosts the BLE address *is* the MAC, so this auto-selects the board. On
-    macOS / some proxies the address is a random UUID and won't match — callers then
+    macOS / some proxies the address is a random UUID and won't match - callers then
     fall back to letting the user pick.
     """
     target = _norm_mac(ble_address)
@@ -94,7 +94,7 @@ def _list_devices_sync(
         cloud = tinytuya.Cloud(
             apiRegion=region, apiKey=access_id, apiSecret=access_secret
         )
-    except Exception as err:  # noqa: BLE001 — network/transport building the client
+    except Exception as err:  # noqa: BLE001 - network/transport building the client
         raise CloudConnError(str(err)) from err
 
     # The constructor performs the token login; a missing token means bad creds/region.
@@ -103,7 +103,7 @@ def _list_devices_sync(
 
     try:
         result = cloud.getdevices(verbose=False)
-    except Exception as err:  # noqa: BLE001 — network/transport listing devices
+    except Exception as err:  # noqa: BLE001 - network/transport listing devices
         raise CloudConnError(str(err)) from err
 
     if isinstance(result, dict):  # tinytuya returns an error dict on failure

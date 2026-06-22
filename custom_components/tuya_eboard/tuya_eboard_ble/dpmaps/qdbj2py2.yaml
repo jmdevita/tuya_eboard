@@ -1,4 +1,4 @@
-# Hussar / Hobbywing HW7009_ZYD075 (OMW Hussar) — DP map
+# Hussar / Hobbywing HW7009_ZYD075 (OMW Hussar) - DP map
 #
 # The deliverable nobody has published for this ESC. Built by correlation, not
 # guessing. Every entry starts UNCONFIRMED; promote to confirmed: true only
@@ -18,7 +18,7 @@
 #   confirmed       false until a correlation experiment verifies it
 #   confirm         how to verify this specific DP
 #   reset           lifetime | session | snapshot | unknown (reset-semantics test)
-#   safe_range      [min,max] for config DPs — required before any write
+#   safe_range      [min,max] for config DPs - required before any write
 
 device:
   product_id: qdbj2py2

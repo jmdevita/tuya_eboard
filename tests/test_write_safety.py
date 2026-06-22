@@ -1,4 +1,4 @@
-"""Write-safety regression tests — no hardware, no BLE I/O.
+"""Write-safety regression tests - no hardware, no BLE I/O.
 
 These guard the invariants that protect a motor controller from bad writes. They
 must never silently regress:

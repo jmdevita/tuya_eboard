@@ -1,4 +1,4 @@
-"""Sensor platform for Tuya E-Board (BLE) — read-only, last-known."""
+"""Sensor platform for Tuya E-Board (BLE) - read-only, last-known."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from .data import TuyaEboardConfigEntry
 from .dpmap import device_meta
 from .entity import TuyaEboardEntity
 
-# Read-only, all state served from one shared coordinator snapshot — no per-entity I/O.
+# Read-only, all state served from one shared coordinator snapshot - no per-entity I/O.
 PARALLEL_UPDATES = 0
 
 
@@ -128,8 +128,8 @@ class TuyaEboardSensor(TuyaEboardEntity, RestoreSensor):
     """A read-only e-board sensor over the DP snapshot.
 
     Restores its last value across restarts so the dashboard shows last-known data
-    (with an honest ``last_seen``) instead of going unavailable until the board — which
-    is asleep most of the time — is next read.
+    (with an honest ``last_seen``) instead of going unavailable until the board - which
+    is asleep most of the time - is next read.
     """
 
     entity_description: EboardSensorDescription

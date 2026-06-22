@@ -1,9 +1,9 @@
 """Config flow for Tuya E-Board (BLE).
 
 Two ways to get the Tuya ``local_key`` for a board:
-  * **Cloud login** (default) — enter Tuya IoT project creds; we list the project's
+  * **Cloud login** (default) - enter Tuya IoT project creds; we list the project's
     devices and pull the key automatically, matching the board by MAC.
-  * **Manual** (advanced) — paste local_key / device_id / uuid.
+  * **Manual** (advanced) - paste local_key / device_id / uuid.
 
 Either way the credentials are verified by one real connect+read before the entry is
 created. Stored cloud creds also power the reauth flow when a key rotates.
@@ -55,7 +55,7 @@ def _prefill() -> dict[str, str]:
         from .tuya_eboard_ble.credentials import load_credentials
 
         creds = load_credentials()
-    except Exception:  # noqa: BLE001 — no devices.json in a normal install; that's fine
+    except Exception:  # noqa: BLE001 - no devices.json in a normal install; that's fine
         return {}
     return {
         CONF_LOCAL_KEY: creds.local_key or "",
@@ -103,7 +103,7 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Scan for advertising boards; re-prompt (no dead-end) if none are found."""
-        # Distinguish "no Bluetooth adapter at all" from "board not found" — they need
+        # Distinguish "no Bluetooth adapter at all" from "board not found" - they need
         # different advice (add an adapter/proxy vs. wake the board). Each re-prompt is
         # its own step (a shown menu's step_id must have a matching handler method).
         if bluetooth.async_scanner_count(self.hass, connectable=True) == 0:
@@ -123,13 +123,13 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_no_bluetooth(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """No Bluetooth adapter available — let the user fix it and rescan."""
+        """No Bluetooth adapter available - let the user fix it and rescan."""
         return self.async_show_menu(step_id="no_bluetooth", menu_options=["scan"])
 
     async def async_step_no_devices(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """No board advertising — let the user wake it and rescan."""
+        """No board advertising - let the user wake it and rescan."""
         return self.async_show_menu(step_id="no_devices", menu_options=["scan"])
 
     async def async_step_pick(
@@ -259,7 +259,7 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
         }
         # The cloud key is authoritative (we matched the board by MAC), so only block on
         # a real key rejection. If the board is merely asleep / out of range now
-        # ("cannot_connect"), create the entry anyway — the coordinator reads it when it
+        # ("cannot_connect"), create the entry anyway - the coordinator reads it when it
         # next wakes. (Manual entry stays strict, since a typo'd key must be caught.)
         if await self._async_try_read(data) == "invalid_auth":
             return self._cloud_form({"base": "invalid_auth"})
@@ -357,7 +357,7 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
                 if device is None:
                     errors["base"] = "cloud_no_devices"
                 elif device.local_key == entry.data.get(CONF_LOCAL_KEY):
-                    # Cloud key == current key, so refreshing won't fix the failure —
+                    # Cloud key == current key, so refreshing won't fix the failure -
                     # surface it instead of silently reload-looping.
                     errors["base"] = "key_unchanged"
                 else:
@@ -400,7 +400,7 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
         )
         try:
             dps = await device.read_all_dps(settle=SETTLE_SECONDS)
-        except Exception:  # noqa: BLE001 — handshake/transport errors -> bad key or link
+        except Exception:  # noqa: BLE001 - handshake/transport errors -> bad key or link
             _LOGGER.debug("Validation read failed", exc_info=True)
             return "invalid_auth"
         if not dps:

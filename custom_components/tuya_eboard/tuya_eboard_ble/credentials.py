@@ -3,7 +3,7 @@
 The vendored ``TuyaBLEDevice`` pulls its credentials through an
 ``AbstaractTuyaBLEDeviceManager``. We implement a tiny manager that serves the
 cached key from ``devices.json`` so nothing here ever touches the Tuya cloud at
-runtime — the cloud was only needed once, to fetch the local key.
+runtime - the cloud was only needed once, to fetch the local key.
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ class JSONDeviceManager(AbstaractTuyaBLEDeviceManager):
     """Serves cached credentials to the vendored TuyaBLEDevice.
 
     ``TuyaBLEDevice`` looks credentials up by BLE address, but on macOS the
-    address is a random CoreBluetooth UUID rather than the MAC — so we ignore
+    address is a random CoreBluetooth UUID rather than the MAC - so we ignore
     the address and just return the single cached credential set.
     """
 

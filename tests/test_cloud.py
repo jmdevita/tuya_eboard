@@ -1,4 +1,4 @@
-"""Cloud onboarding helpers — pure logic, no Home Assistant, no network.
+"""Cloud onboarding helpers - pure logic, no Home Assistant, no network.
 
 Imports the module by its short name via conftest's sys.path shim. The Tuya cloud call
 itself (async_list_devices) isn't exercised here; these cover the device normalization

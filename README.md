@@ -1,4 +1,4 @@
-# tuya-eboard — a Tuya BLE e-board client for Home Assistant
+# tuya-eboard - a Tuya BLE e-board client for Home Assistant
 
 A connect-on-demand client for **Tuya BLE** electric-skateboard ESCs, built first
 for the **OMW Hussar / Hobbywing HW7009** but structured to work with **any Tuya
@@ -11,11 +11,11 @@ snapshots.
 
 The single most important design point:
 
-- **The process is the same for every Tuya board** — BLE transport, the Tuya
+- **The process is the same for every Tuya board** - BLE transport, the Tuya
   handshake + session crypto, DP framing, pulling the cloud data model, the
   dump→classify→correlate flow, and the write-safety gate. This is **shared code,
   written once.**
-- **The DP mapping varies per board** — *which* DP is voltage vs odometer vs a
+- **The DP mapping varies per board** - *which* DP is voltage vs odometer vs a
   config value, the scales, the enum meanings. This is **data, one file per
   product**, not code.
 
@@ -50,11 +50,11 @@ same Hobbywing/Tuya firmware may even share a `product_id` and reuse a map as-is
 
 ```
 custom_components/tuya_eboard/    the HACS integration (config flow, coordinator, entities)
-  tuya_eboard_ble/                the board-agnostic library — the "engine":
+  tuya_eboard_ble/                the board-agnostic library - the "engine":
     _vendor/tuya_ble/   borrowed Tuya BLE protocol (handshake, session key, AES),
                         locally patched for Tuya BLE v4 / 0xFD50 (see below)
     credentials.py      load device id/local_key/uuid from tinytuya devices.json
-    protocol.py         pure DP codec (v3 + v4 length widths) — unit-tested
+    protocol.py         pure DP codec (v3 + v4 length widths) - unit-tested
     device.py           discover_board(), read_all_dps(), write_dp() + safety gate
     dpmaps/             per-product DP maps, selected by product_id (the "data")
       qdbj2py2.yaml       OMW Hussar / HW7009
@@ -79,7 +79,7 @@ and selects the right GATT characteristics + device-info handshake payload
 | Gen | Service | Chars | device-info | DP length | Status |
 |-----|---------|-------|-------------|-----------|--------|
 | **v4** | `0xFD50` | `…07d0` | `[0x00,0xF3]` | 2 bytes | verified (HW7009/Hussar) |
-| **v3** | `0xA201` | `0x2b10/0x2b11` | empty | 1 byte | **beta — untested** |
+| **v3** | `0xA201` | `0x2b10/0x2b11` | empty | 1 byte | **beta - untested** |
 
 > **v3 is beta.** The code paths exist (v3 is what upstream `ha_tuya_ble` targets,
 > and our additions are additive), but we have **not** verified them against real
@@ -92,18 +92,18 @@ now means: same engine, generation auto-selected, one YAML per product.
 ## Home Assistant integration (HACS)
 
 A custom integration lives in [`custom_components/tuya_eboard/`](custom_components/tuya_eboard/)
-— a standalone, HACS-installable component (the only HA project with **Tuya BLE v4 / 0xFD50**
+- a standalone, HACS-installable component (the only HA project with **Tuya BLE v4 / 0xFD50**
 support).
 
 - **Install:** add this repo as a HACS *custom repository* (category: Integration), install,
   restart HA.
 - **Add the board:** power it on (remote awake, in range) → HA auto-discovers it over Bluetooth
-  → **log in with your Tuya IoT cloud credentials and pick your board** — the local key is pulled
+  → **log in with your Tuya IoT cloud credentials and pick your board** - the local key is pulled
   automatically (see the official [Tuya integration docs](https://www.home-assistant.io/integrations/tuya/)
   for creating a project + getting the Access ID/Secret). Manual key entry is available as an
   advanced fallback. Credentials are verified by one real connect+read before the entry is
   created, and a rotated key (after re-pairing) is refreshed automatically via reauth.
-- **What you get:** read-only `sensor`/`binary_sensor` entities — battery %, voltage, odometer,
+- **What you get:** read-only `sensor`/`binary_sensor` entities - battery %, voltage, odometer,
   trip distance/time, speed mode, cruise, BLE lock, `present`, and `last_seen`.
 
 It's **connect-on-demand**: the board is only reachable when on + remote awake, so HA reads
@@ -119,7 +119,7 @@ pip install -r tests/requirements.txt
 python -m tinytuya wizard      # answer Y to "Download DP Name mappings"
 ```
 
-`devices.json` / `tinytuya.json` (secrets) are gitignored — never commit them.
+`devices.json` / `tinytuya.json` (secrets) are gitignored - never commit them.
 
 ## Use (board powered on, in range, phone app closed)
 
@@ -165,7 +165,7 @@ python -m pytest -q        # pure, no hardware
 
 ## License
 
-This project is licensed under the **GNU GPL v3.0** — see [`LICENSE`](LICENSE).
+This project is licensed under the **GNU GPL v3.0** - see [`LICENSE`](LICENSE).
 
 It vendors the Tuya BLE transport from
 [PlusPlus-ua/ha_tuya_ble](https://github.com/PlusPlus-ua/ha_tuya_ble) (**MIT**,

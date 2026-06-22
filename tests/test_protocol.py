@@ -1,4 +1,4 @@
-"""Pure DP codec tests — no BLE, no hardware. Run: pytest -q
+"""Pure DP codec tests - no BLE, no hardware. Run: pytest -q
 
 Once you capture real DP dumps with `python tools/cli.py dump --save tests/fixtures`,
 the `test_real_fixtures_roundtrip` test will pick them up automatically.

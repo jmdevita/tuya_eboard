@@ -1,7 +1,7 @@
 """Phase -1 reconnaissance: confirm a Tuya BLE board is reachable.
 
 Reports any device advertising a Tuya service UUID (0xA201 legacy or 0xFD50
-newer). No local key needed — pure GATT-layer discovery. Run with the board
+newer). No local key needed - pure GATT-layer discovery. Run with the board
 powered on and in range.
 
 Optional, to highlight a specific board:

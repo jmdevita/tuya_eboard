@@ -16,7 +16,7 @@ import yaml
 _DPMAPS_DIR = Path(__file__).parent / "tuya_eboard_ble" / "dpmaps"
 
 # product_id is user-supplied in the config flow and used to build a filename, so
-# constrain it to the Tuya id charset — no path separators / traversal.
+# constrain it to the Tuya id charset - no path separators / traversal.
 _SAFE_PRODUCT_ID = re.compile(r"^[A-Za-z0-9_-]+$")
 
 

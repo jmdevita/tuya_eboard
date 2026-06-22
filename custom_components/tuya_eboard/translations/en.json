@@ -11,7 +11,7 @@
       },
       "no_bluetooth": {
         "title": "No Bluetooth adapter",
-        "description": "Home Assistant has no Bluetooth adapter available, so it can't scan. Connect a Bluetooth adapter, run Home Assistant on hardware that has one, or add an ESPHome Bluetooth Proxy — then try again.",
+        "description": "Home Assistant has no Bluetooth adapter available, so it can't scan. Connect a Bluetooth adapter, run Home Assistant on hardware that has one, or add an ESPHome Bluetooth Proxy, then try again.",
         "menu_options": {
           "scan": "Try again"
         }
@@ -40,28 +40,28 @@
       },
       "cloud": {
         "title": "Tuya cloud login",
-        "description": "Enter your Tuya IoT Platform project credentials. Home Assistant lists the devices in your project and pulls this board's local key automatically. See the Home Assistant 'Tuya' integration docs for how to create a project and get these values.",
+        "description": "Enter your Tuya IoT Platform project credentials. Home Assistant lists the devices in your project and pulls this board's local key automatically. Need a project? Follow the [Home Assistant Tuya integration setup](https://www.home-assistant.io/integrations/tuya/) to create one and get these values.",
         "data": {
           "access_id": "Access ID / Client ID",
           "access_secret": "Access Secret / Client Secret",
           "region": "Data center region"
         },
         "data_description": {
-          "access_id": "From your Tuya IoT Platform cloud project (Authorization Key).",
+          "access_id": "From your Tuya IoT Platform cloud project, shown as Access ID / Client ID.",
           "access_secret": "The matching secret for the project.",
           "region": "The data center your Tuya/Smart Life account is registered in."
         }
       },
       "cloud_pick": {
         "title": "Select your board",
-        "description": "Couldn't match the board by MAC automatically — pick it from your Tuya account's devices.",
+        "description": "Couldn't match the board by MAC automatically. Pick it from your Tuya account's devices.",
         "data": {
           "device_id": "Device"
         }
       },
       "reauth_confirm": {
         "title": "Re-authenticate {name}",
-        "description": "This board's local key changed — usually after re-pairing it in the Tuya app. Confirm your Tuya cloud credentials and Home Assistant will fetch the new key automatically.",
+        "description": "This board's local key changed, usually after re-pairing it in the Tuya app. Confirm your Tuya cloud credentials and Home Assistant will fetch the new key automatically.",
         "data": {
           "access_id": "Access ID / Client ID",
           "access_secret": "Access Secret / Client Secret",
@@ -78,7 +78,7 @@
           "product_id": "Product ID (optional)"
         },
         "data_description": {
-          "local_key": "The device's local key from devices.json / the Tuya IoT cloud. Re-pairing the board rotates it.",
+          "local_key": "The board's local key from your Tuya IoT cloud project. Re-pairing the board rotates it.",
           "device_id": "The Tuya device ID (e.g. ebd37c...).",
           "uuid": "The Tuya device UUID.",
           "product_id": "Selects the per-product DP map (units/scales). Leave blank to use defaults."
@@ -87,7 +87,7 @@
     },
     "error": {
       "cannot_connect": "Couldn't reach the board. Make sure it's powered on with the remote awake and in Bluetooth range, then try again.",
-      "invalid_auth": "Connected, but the handshake failed — the local key is likely wrong or stale (re-pairing the board rotates it). Re-run `tinytuya wizard` and re-enter it.",
+      "invalid_auth": "Connected, but the board rejected the local key. Re-pairing the board in the Tuya app rotates the key, so use cloud login to fetch the current one (or re-enter it manually).",
       "invalid_cloud_auth": "Tuya cloud login failed. Check the Access ID, Access Secret, and region.",
       "cloud_cannot_connect": "Couldn't reach the Tuya cloud. Check your internet connection and try again.",
       "cloud_no_devices": "No devices found in this Tuya project. Make sure your Smart Life / Tuya app account is linked to the project.",
@@ -96,7 +96,7 @@
     "abort": {
       "already_configured": "This board is already configured.",
       "no_devices_found": "No Tuya e-board found advertising. Power the board on (remote awake) and in range, then retry.",
-      "reauth_successful": "Re-authentication successful — the local key was refreshed."
+      "reauth_successful": "Re-authentication successful. The local key was refreshed."
     }
   },
   "entity": {
@@ -110,7 +110,7 @@
     "binary_sensor": {
       "cruise": { "name": "Cruise control" },
       "ble_lock": { "name": "BLE lock" },
-      "present": { "name": "Present" }
+      "present": { "name": "In range" }
     }
   }
 }

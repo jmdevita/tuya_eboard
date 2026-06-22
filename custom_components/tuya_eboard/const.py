@@ -15,7 +15,7 @@ CONF_PRODUCT_ID: Final = "product_id"
 CONF_PRODUCT_NAME: Final = "product_name"
 CONF_CATEGORY: Final = "category"
 
-# Tuya cloud (project) credentials — stored so reauth can re-pull a rotated local_key.
+# Tuya cloud (project) credentials - stored so reauth can re-pull a rotated local_key.
 CONF_ACCESS_ID: Final = "access_id"
 CONF_ACCESS_SECRET: Final = "access_secret"
 CONF_REGION: Final = "region"

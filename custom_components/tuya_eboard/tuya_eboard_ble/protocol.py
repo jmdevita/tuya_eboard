@@ -1,4 +1,4 @@
-"""Pure DP (datapoint) codec — no BLE, no crypto, fully unit-testable.
+"""Pure DP (datapoint) codec - no BLE, no crypto, fully unit-testable.
 
 This decodes/encodes the *application* payload that sits inside an already
 decrypted Tuya BLE frame: a flat stream of datapoints. It mirrors exactly what
@@ -15,11 +15,11 @@ Wire format per datapoint::
 
 The length field width depends on the Tuya BLE protocol generation: **v3 uses 1
 byte, v4 uses 2 bytes** (big-endian). Pass ``length_bytes=1`` for v3 or ``2`` for
-v4 (the default — modern Tuya boards are v4). Multibyte values are big-endian
+v4 (the default - modern Tuya boards are v4). Multibyte values are big-endian
 throughout; a ``value`` DP is whatever width the device sends, decoded big-endian
 signed. Mirrors the vendored ``_parse_datapoints_v3`` / ``_parse_datapoints_v4``.
 
-NOTE: the design doc's §3.3 described a 2-byte length + fixed 4-byte values —
+NOTE: the design doc's §3.3 described a 2-byte length + fixed 4-byte values -
 that's the Tuya *MCU serial* protocol, a different layer; the BLE DP stream is as
 drawn above.
 """

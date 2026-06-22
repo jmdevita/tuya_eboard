@@ -20,7 +20,7 @@ from .data import TuyaEboardConfigEntry
 from .dpmap import device_meta
 from .entity import TuyaEboardEntity
 
-# Read-only, all state served from one shared coordinator snapshot — no per-entity I/O.
+# Read-only, all state served from one shared coordinator snapshot - no per-entity I/O.
 PARALLEL_UPDATES = 0
 
 
@@ -91,7 +91,7 @@ class TuyaEboardBinarySensor(TuyaEboardEntity, RestoreEntity, BinarySensorEntity
 
     DP-backed sensors (cruise, ble_lock) restore their last state across restarts so
     they show last-known instead of going unavailable. ``present`` is real-time and is
-    not restored — it correctly starts "Disconnected" until the board is seen again.
+    not restored - it correctly starts "Disconnected" until the board is seen again.
     """
 
     entity_description: EboardBinarySensorDescription
