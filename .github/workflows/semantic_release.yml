@@ -1,4 +1,8 @@
-name: Create Release from Tag
+name: Release
+
+# A user-pushed tag triggers this (tag pushes aren't subject to the GITHUB_TOKEN
+# "don't trigger other workflows" rule), so we do everything in one job: stamp the
+# manifest version from the tag, build the HACS zip, and publish the release with it.
 
 on:
   push:
@@ -10,14 +14,24 @@ permissions:
 
 jobs:
   release:
-    name: Create GitHub Release
+    name: Build + publish release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Create GitHub Release
+      - name: Stamp manifest version from the tag
+        run: |
+          python3 "${{ github.workspace }}/.github/scripts/update_hacs_manifest.py" \
+            --version "${{ github.ref_name }}"
+
+      - name: Build the HACS zip
+        run: |
+          cd custom_components/tuya_eboard
+          zip -r "${{ github.workspace }}/tuya_eboard.zip" . -x '*.zip' '*/__pycache__/*'
+
+      - name: Publish release with the zip asset
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: ${{ contains(github.ref_name, 'beta') }}
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
+          files: tuya_eboard.zip
