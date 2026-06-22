@@ -1,0 +1,6 @@
+# Branch-name -> label rules (labels feed the release-drafter changelog categories).
+feature: ["feature/*", "feat/*"]
+fix: ["fix/*", "bugfix/*"]
+chore: ["chore/*"]
+docs: ["docs/*"]
+ci: ["ci/*"]

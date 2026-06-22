@@ -1,0 +1,95 @@
+# Hussar / Hobbywing HW7009_ZYD075 (OMW Hussar) — DP map
+#
+# The deliverable nobody has published for this ESC. Built by correlation, not
+# guessing. Every entry starts UNCONFIRMED; promote to confirmed: true only
+# after a correlation experiment pins it down (see `confirm:` on each entry and
+# the experiment protocol in README / the notes block at the bottom).
+#
+# Captured 2026-06-21 from a single idle dump (board parked, ~41.8V pack). DPs
+# 1-20 are Tuya "standard" indices (live state/telemetry); 101-120 are the
+# vendor's custom range (a ride-tuning profile + extra telemetry).
+#
+# Fields:
+#   type            DT as reported (bool/value/enum/raw/string)
+#   observed        value in the first idle capture
+#   guess           current hypothesis (LOW confidence unless confirmed)
+#   tier            1=cumulative/measurable, 2=session, 3=maybe-not-real
+#   class           telemetry (read) | config (write-class, DO NOT WRITE yet)
+#   confirmed       false until a correlation experiment verifies it
+#   confirm         how to verify this specific DP
+#   reset           lifetime | session | snapshot | unknown (reset-semantics test)
+#   safe_range      [min,max] for config DPs — required before any write
+
+device:
+  product_id: qdbj2py2
+  product_name: HW7009_ZYD075
+  protocol: tuya-ble-v4
+  # From published OMW Hussar specs (electricskateboardhq.com, omwboards.com):
+  board: OMW Hussar
+  battery: 12S3P 21700 648Wh
+  pack_full_v: 50.2      # OBSERVED 2026-06-21 full charge: DP20 == 502 (not the 50.4 theoretical 12*4.2)
+  pack_nominal_v: 44.4   # 12 * 3.7
+  pack_empty_v: 36.0     # 12 * 3.0
+  speed_modes: 4
+  top_speed_kmh: 55
+  features: [headlight, brake_light, rgb_deck, cruise_control]
+
+datapoints:
+
+  # ---- standard range: live state / telemetry ----
+  # Codes/units/scales below are the AUTHORITATIVE Tuya Cloud "Things Data Model"
+  # (getdps for this product). The cloud schema OVERRODE three of our
+  # hand-guesses (notably DP3 = battery %, NOT temperature). There is no temp DP.
+  1:  {code: blelock_switch,     type: bool,  observed: true,  guess: "BLE lock switch",                 tier: 1, class: telemetry, confirmed: true,  reset: snapshot, confirm: "cloud data model"}
+  2:  {code: speed,             type: value, observed: 0,     guess: "speed (km/h, scale 1); 0 parked", tier: 1, class: telemetry, confirmed: true,  reset: snapshot, confirm: "cloud data model"}
+  3:  {code: battery_percentage, type: value, observed: 27,    guess: "battery charge % (0-100, scale 0)", tier: 1, class: telemetry, confirmed: true,  reset: snapshot, confirm: "cloud data model; 27->32 while charging = SOC rising (was mis-read as temp)"}
+  5:  {code: mileage_once,      type: value, observed: 0,     guess: "trip distance (km, scale 1)",     tier: 2, class: telemetry, confirmed: true,  reset: session, confirm: "cloud data model"}
+  6:  {code: ridetime_once,     type: value, observed: null,  guess: "trip ride time (s)",              tier: 2, class: telemetry, confirmed: true,  reset: session, confirm: "cloud data model (not in last dump)"}
+  8:  {code: headlight_switch,  type: bool,  observed: false, guess: "headlight switch (no physical light on this unit)", tier: 2, class: telemetry, confirmed: true,  reset: snapshot, confirm: "cloud data model"}
+  11: {code: unit_set,          type: enum,  observed: 1,     guess: "units: range [km, mile] -> 1 = mile", tier: 2, class: config,    confirmed: true,  reset: snapshot, confirm: "cloud data model; app shows miles"}
+  12: {code: mileage_total,     type: value, observed: 281,   guess: "total odometer (km, scale 1 -> 28.1km)", tier: 1, class: telemetry, confirmed: true,  reset: lifetime, confirm: "cloud data model + 281->28.1km=17.5mi matches app"}
+  13: {code: cruise_switch,     type: bool,  observed: false, guess: "cruise control switch",           tier: 2, class: telemetry, confirmed: true,  reset: snapshot, confirm: "cloud data model"}
+  14: {code: level,            type: enum,  observed: 2,     guess: "speed mode, range [level_1..4] -> value+1", tier: 2, class: telemetry, confirmed: true,  reset: snapshot, confirm: "cloud data model + level3->2,4->3,1->0"}
+  20: {code: voltage_current,   type: value, observed: 418,   guess: "pack voltage (V, scale 1 -> 41.8V; 12S)", tier: 1, class: telemetry, confirmed: true,  reset: snapshot, confirm: "cloud data model + climbed 419->427 charging"}
+
+  # ---- custom range: ride-tuning profile (config) + extra telemetry ----
+  # These look like a per-mode tuning profile (speed caps / accel / brake %).
+  # DO NOT WRITE any of these until each is confirmed via the app oracle AND a
+  # safe_range is filled in. They stay off WRITE_ALLOWLIST in device.py.
+  101: {type: enum,  observed: 0,   guess: units or a mode select, tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle: flip setting, diff"}
+  102: {type: value, observed: 80,  guess: a percent setting,      tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  103: {type: enum,  observed: 1,   guess: a mode select,          tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle"}
+  104: {type: value, observed: 150, guess: "wheel diameter mm (6in pneumatic ~152)", tier: 2, class: config, confirmed: false, reset: unknown, confirm: "matches installed wheel size", safe_range: null}
+  105: {type: value, observed: 37,  guess: limit/threshold,        tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  106: {type: value, observed: 7,   guess: limit/threshold,        tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  107: {type: bool,  observed: true, guess: a feature toggle,       tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle"}
+  # 108-111 = 15/25/40/55 and the board has 4 speed modes with a 55 km/h top
+  # speed -> almost certainly the per-mode speed caps (km/h), modes 1->4.
+  108: {type: value, observed: 15,  guess: "speed cap mode 1 (km/h)", tier: 2, class: config, confirmed: false, reset: unknown, confirm: "change mode-1 limit on remote, re-dump", safe_range: null}
+  109: {type: value, observed: 25,  guess: "speed cap mode 2 (km/h)", tier: 2, class: config, confirmed: false, reset: unknown, confirm: "change mode-2 limit on remote, re-dump", safe_range: null}
+  110: {type: value, observed: 40,  guess: "speed cap mode 3 (km/h)", tier: 2, class: config, confirmed: false, reset: unknown, confirm: "change mode-3 limit on remote, re-dump", safe_range: null}
+  111: {type: value, observed: 55,  guess: "speed cap mode 4 (km/h) = top speed", tier: 2, class: config, confirmed: false, reset: unknown, confirm: "matches 55 km/h top speed", safe_range: null}
+  112: {type: value, observed: 30,  guess: tuning profile param,   tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  113: {type: value, observed: 50,  guess: tuning profile param,   tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  114: {type: value, observed: 100, guess: percent (brake/throttle), tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  115: {type: value, observed: 100, guess: percent,                tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  116: {type: value, observed: 80,  guess: percent,                tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  117: {type: value, observed: 80,  guess: percent,                tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  118: {type: value, observed: 80,  guess: percent,                tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  119: {type: value, observed: 80,  guess: percent,                tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+  120: {type: value, observed: 100, guess: percent,                tier: 2, class: config, confirmed: false, reset: unknown, confirm: "app-oracle", safe_range: null}
+
+# Experiment protocol (each step = labeled captures, then correlate.py the pair):
+#   A. Voltage lock (5 min, highest value):
+#        multimeter the charge port -> compare DP20/10 (predict ~41.8V) and DP12/10.
+#   B. Idle reproducibility:
+#        tuya-eboard dump --save captures --label idle1   (x2, a minute apart)
+#        python tools/correlate.py captures/<idle1>.json captures/<idle2>.json
+#        -> anything that moves at rest is live (temp/voltage); rest is stable.
+#   C. Charge state:  dump --label after-charge  vs  dump --label after-ride
+#        -> voltage / SOC / temp move.
+#   D. Odometer:  dump --label pre-ride, ride a known distance, dump --label post-ride
+#        -> the DP that ticks up by ~your distance is the odometer (likely 12).
+#   E. Config (app oracle): in the official app change ONE setting, re-dump,
+#        correlate -> identifies that 101-120 DP + its encoding. Fill safe_range.
+#        Only AFTER this may a DP be added to WRITE_ALLOWLIST.

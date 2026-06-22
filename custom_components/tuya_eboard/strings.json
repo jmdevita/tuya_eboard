@@ -1,0 +1,73 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Add Tuya E-Board",
+        "description": "Power your board on (turn the remote on so it's awake) and bring it within Bluetooth range of Home Assistant, then start the scan. The board sleeps when idle, so it's only discoverable while it's on.",
+        "menu_options": {
+          "scan": "Start scan"
+        }
+      },
+      "no_bluetooth": {
+        "title": "No Bluetooth adapter",
+        "description": "Home Assistant has no Bluetooth adapter available, so it can't scan. Connect a Bluetooth adapter, run Home Assistant on hardware that has one, or add an ESPHome Bluetooth Proxy — then try again.",
+        "menu_options": {
+          "scan": "Try again"
+        }
+      },
+      "no_devices": {
+        "title": "No board found",
+        "description": "Bluetooth is working, but no Tuya e-board was advertising. Make sure the board is powered on (remote awake) and in Bluetooth range, then scan again.",
+        "menu_options": {
+          "scan": "Start scan"
+        }
+      },
+      "pick": {
+        "title": "Select board",
+        "description": "Choose the discovered board to add.",
+        "data": {
+          "address": "Board"
+        }
+      },
+      "credentials": {
+        "title": "Credentials for {name}",
+        "description": "Enter the Tuya local key for this board (from the Tuya IoT cloud via `tinytuya wizard`). The values are verified by a one-time connect and read.",
+        "data": {
+          "local_key": "Local key",
+          "device_id": "Device ID",
+          "uuid": "UUID",
+          "product_id": "Product ID (optional)"
+        },
+        "data_description": {
+          "local_key": "The device's local key from devices.json / the Tuya IoT cloud. Re-pairing the board rotates it.",
+          "device_id": "The Tuya device ID (e.g. ebd37c...).",
+          "uuid": "The Tuya device UUID.",
+          "product_id": "Selects the per-product DP map (units/scales). Leave blank to use defaults."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Couldn't reach the board. Make sure it's powered on with the remote awake and in Bluetooth range, then try again.",
+      "invalid_auth": "Connected, but the handshake failed — the local key is likely wrong or stale (re-pairing the board rotates it). Re-run `tinytuya wizard` and re-enter it."
+    },
+    "abort": {
+      "already_configured": "This board is already configured.",
+      "no_devices_found": "No Tuya e-board found advertising. Power the board on (remote awake) and in range, then retry."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "odometer": { "name": "Odometer" },
+      "trip_distance": { "name": "Last trip distance" },
+      "trip_time": { "name": "Last trip time" },
+      "speed_mode": { "name": "Speed mode" },
+      "last_seen": { "name": "Last seen" }
+    },
+    "binary_sensor": {
+      "cruise": { "name": "Cruise control" },
+      "ble_lock": { "name": "BLE lock" },
+      "present": { "name": "Present" }
+    }
+  }
+}
