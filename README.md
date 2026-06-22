@@ -98,8 +98,11 @@ support).
 - **Install:** add this repo as a HACS *custom repository* (category: Integration), install,
   restart HA.
 - **Add the board:** power it on (remote awake, in range) → HA auto-discovers it over Bluetooth
-  → enter the Tuya `local_key` / `device_id` / `uuid` (from `tinytuya wizard`). The credentials
-  are verified by one real connect+read before the entry is created.
+  → **log in with your Tuya IoT cloud credentials and pick your board** — the local key is pulled
+  automatically (see the official [Tuya integration docs](https://www.home-assistant.io/integrations/tuya/)
+  for creating a project + getting the Access ID/Secret). Manual key entry is available as an
+  advanced fallback. Credentials are verified by one real connect+read before the entry is
+  created, and a rotated key (after re-pairing) is refreshed automatically via reauth.
 - **What you get:** read-only `sensor`/`binary_sensor` entities — battery %, voltage, odometer,
   trip distance/time, speed mode, cruise, BLE lock, `present`, and `last_seen`.
 

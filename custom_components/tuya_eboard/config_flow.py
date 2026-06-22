@@ -1,14 +1,18 @@
 """Config flow for Tuya E-Board (BLE).
 
-v1 acquires the Tuya ``local_key`` manually (prefilled from a local ``devices.json``
-if one happens to be present). The entered credentials are verified by performing one
-real connect+read before the entry is created, so a bad key fails fast. Cloud-login
-credential refresh is a planned follow-up (see the plan / design doc).
+Two ways to get the Tuya ``local_key`` for a board:
+  * **Cloud login** (default) — enter Tuya IoT project creds; we list the project's
+    devices and pull the key automatically, matching the board by MAC.
+  * **Manual** (advanced) — paste local_key / device_id / uuid.
+
+Either way the credentials are verified by one real connect+read before the entry is
+created. Stored cloud creds also power the reauth flow when a key rotates.
 """
 
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 import voluptuous as vol
@@ -16,13 +20,24 @@ from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
+from .cloud import (
+    REGIONS,
+    CloudAuthError,
+    CloudConnError,
+    CloudDevice,
+    async_list_devices,
+    match_by_mac,
+)
 from .const import (
+    CONF_ACCESS_ID,
+    CONF_ACCESS_SECRET,
     CONF_ADDRESS,
     CONF_CATEGORY,
     CONF_DEVICE_ID,
     CONF_LOCAL_KEY,
     CONF_PRODUCT_ID,
     CONF_PRODUCT_NAME,
+    CONF_REGION,
     CONF_UUID,
     DOMAIN,
     SERVICE_UUID_FD50,
@@ -58,6 +73,8 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._discovery: BluetoothServiceInfoBleak | None = None
         self._discovered: dict[str, BluetoothServiceInfoBleak] = {}
+        self._cloud_creds: dict[str, str] = {}
+        self._cloud_devices: list[CloudDevice] = []
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -69,7 +86,7 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
         self.context["title_placeholders"] = {
             "name": discovery_info.name or "Tuya E-Board"
         }
-        return await self.async_step_credentials()
+        return await self.async_step_choose_auth()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -124,7 +141,7 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(address, raise_on_progress=False)
             self._abort_if_unique_id_configured()
             self._discovery = self._discovered.get(address)
-            return await self.async_step_credentials()
+            return await self.async_step_choose_auth()
 
         return self.async_show_form(
             step_id="pick",
@@ -140,10 +157,116 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
         )
 
+    async def async_step_choose_auth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose how to provide the local key: cloud login or manual entry."""
+        return self.async_show_menu(
+            step_id="choose_auth", menu_options=["cloud", "credentials"]
+        )
+
+    async def async_step_cloud(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Log into the Tuya cloud, list devices, and match the board by MAC."""
+        assert self._discovery is not None
+        if user_input is not None:
+            self._cloud_creds = {
+                CONF_ACCESS_ID: user_input[CONF_ACCESS_ID],
+                CONF_ACCESS_SECRET: user_input[CONF_ACCESS_SECRET],
+                CONF_REGION: user_input[CONF_REGION],
+            }
+            try:
+                devices = await async_list_devices(
+                    self.hass,
+                    user_input[CONF_REGION],
+                    user_input[CONF_ACCESS_ID],
+                    user_input[CONF_ACCESS_SECRET],
+                )
+            except CloudAuthError:
+                return self._cloud_form({"base": "invalid_cloud_auth"})
+            except CloudConnError:
+                return self._cloud_form({"base": "cloud_cannot_connect"})
+            if not devices:
+                return self._cloud_form({"base": "cloud_no_devices"})
+            self._cloud_devices = devices
+            matches = match_by_mac(devices, self._discovery.address)
+            if len(matches) == 1:
+                return await self._async_create_from_cloud(matches[0])
+            return await self.async_step_cloud_pick()
+        return self._cloud_form()
+
+    def _cloud_form(self, errors: dict[str, str] | None = None) -> ConfigFlowResult:
+        pre = self._cloud_creds
+        return self.async_show_form(
+            step_id="cloud",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_ACCESS_ID, default=pre.get(CONF_ACCESS_ID, "")
+                    ): str,
+                    vol.Required(
+                        CONF_ACCESS_SECRET, default=pre.get(CONF_ACCESS_SECRET, "")
+                    ): str,
+                    vol.Required(
+                        CONF_REGION, default=pre.get(CONF_REGION, "us")
+                    ): vol.In(REGIONS),
+                }
+            ),
+            errors=errors or {},
+            description_placeholders={
+                "name": self._discovery.name if self._discovery else "Tuya E-Board"
+            },
+        )
+
+    async def async_step_cloud_pick(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pick the board from the cloud device list (MAC auto-match didn't resolve)."""
+        if user_input is not None:
+            device = next(
+                d for d in self._cloud_devices if d.id == user_input[CONF_DEVICE_ID]
+            )
+            return await self._async_create_from_cloud(device)
+        return self.async_show_form(
+            step_id="cloud_pick",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE_ID): vol.In(
+                        {
+                            d.id: f"{d.name or d.product_id or 'device'} ({d.id})"
+                            for d in self._cloud_devices
+                        }
+                    )
+                }
+            ),
+        )
+
+    async def _async_create_from_cloud(
+        self, device: CloudDevice
+    ) -> ConfigFlowResult:
+        """Build creds from a cloud device, verify over BLE, and create the entry."""
+        assert self._discovery is not None
+        data = {
+            CONF_ADDRESS: self._discovery.address,
+            CONF_LOCAL_KEY: device.local_key,
+            CONF_DEVICE_ID: device.id,
+            CONF_UUID: device.uuid,
+            CONF_PRODUCT_ID: device.product_id,
+            CONF_CATEGORY: device.category,
+            CONF_PRODUCT_NAME: device.name or self._discovery.name or "",
+            **self._cloud_creds,
+        }
+        if error := await self._async_try_read(data):
+            return self._cloud_form({"base": error})
+        return self.async_create_entry(
+            title=device.name or self._discovery.name or "Tuya E-Board", data=data
+        )
+
     async def async_step_credentials(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Collect + verify the Tuya credentials for the chosen board."""
+        """Collect + verify the Tuya credentials for the chosen board (manual)."""
         assert self._discovery is not None
         errors: dict[str, str] = {}
 
@@ -183,6 +306,75 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "name": self._discovery.name or "Tuya E-Board"
             },
+        )
+
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> ConfigFlowResult:
+        """Triggered when the stored local key stops working (likely a re-pair)."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Re-pull the local key from the Tuya cloud (silent if creds still valid)."""
+        entry = self._get_reauth_entry()
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            cloud = {
+                CONF_ACCESS_ID: user_input[CONF_ACCESS_ID],
+                CONF_ACCESS_SECRET: user_input[CONF_ACCESS_SECRET],
+                CONF_REGION: user_input[CONF_REGION],
+            }
+        else:
+            cloud = {
+                k: entry.data.get(k, "")
+                for k in (CONF_ACCESS_ID, CONF_ACCESS_SECRET, CONF_REGION)
+            }
+
+        if all(cloud.values()):
+            try:
+                devices = await async_list_devices(
+                    self.hass,
+                    cloud[CONF_REGION],
+                    cloud[CONF_ACCESS_ID],
+                    cloud[CONF_ACCESS_SECRET],
+                )
+            except CloudAuthError:
+                errors["base"] = "invalid_cloud_auth"
+            except CloudConnError:
+                errors["base"] = "cloud_cannot_connect"
+            else:
+                device = next(
+                    (d for d in devices if d.id == entry.data.get(CONF_DEVICE_ID)),
+                    None,
+                )
+                if device is None:
+                    errors["base"] = "cloud_no_devices"
+                else:
+                    return self.async_update_reload_and_abort(
+                        entry,
+                        data={**entry.data, CONF_LOCAL_KEY: device.local_key, **cloud},
+                    )
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_ACCESS_ID, default=cloud.get(CONF_ACCESS_ID, "")
+                    ): str,
+                    vol.Required(
+                        CONF_ACCESS_SECRET, default=cloud.get(CONF_ACCESS_SECRET, "")
+                    ): str,
+                    vol.Required(
+                        CONF_REGION, default=cloud.get(CONF_REGION) or "us"
+                    ): vol.In(REGIONS),
+                }
+            ),
+            errors=errors,
+            description_placeholders={"name": entry.title},
         )
 
     async def _async_try_read(self, data: dict[str, Any]) -> str | None:

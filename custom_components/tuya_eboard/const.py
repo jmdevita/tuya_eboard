@@ -15,6 +15,11 @@ CONF_PRODUCT_ID: Final = "product_id"
 CONF_PRODUCT_NAME: Final = "product_name"
 CONF_CATEGORY: Final = "category"
 
+# Tuya cloud (project) credentials — stored so reauth can re-pull a rotated local_key.
+CONF_ACCESS_ID: Final = "access_id"
+CONF_ACCESS_SECRET: Final = "access_secret"
+CONF_REGION: Final = "region"
+
 # Tuya BLE v4 service advertised by these boards (matches the manifest matcher).
 SERVICE_UUID_FD50: Final = "0000fd50-0000-1000-8000-00805f9b34fb"
 

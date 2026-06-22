@@ -30,9 +30,47 @@
           "address": "Board"
         }
       },
+      "choose_auth": {
+        "title": "Add {name}",
+        "description": "How should Home Assistant get this board's Tuya local key? Cloud login fetches it for you from your Tuya IoT project. Manual entry is for advanced users who already have the key.",
+        "menu_options": {
+          "cloud": "Tuya cloud login (recommended)",
+          "credentials": "Enter the key manually"
+        }
+      },
+      "cloud": {
+        "title": "Tuya cloud login",
+        "description": "Enter your Tuya IoT Platform project credentials. Home Assistant lists the devices in your project and pulls this board's local key automatically. See the Home Assistant 'Tuya' integration docs for how to create a project and get these values.",
+        "data": {
+          "access_id": "Access ID / Client ID",
+          "access_secret": "Access Secret / Client Secret",
+          "region": "Data center region"
+        },
+        "data_description": {
+          "access_id": "From your Tuya IoT Platform cloud project (Authorization Key).",
+          "access_secret": "The matching secret for the project.",
+          "region": "The data center your Tuya/Smart Life account is registered in."
+        }
+      },
+      "cloud_pick": {
+        "title": "Select your board",
+        "description": "Couldn't match the board by MAC automatically — pick it from your Tuya account's devices.",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate {name}",
+        "description": "This board's local key changed — usually after re-pairing it in the Tuya app. Confirm your Tuya cloud credentials and Home Assistant will fetch the new key automatically.",
+        "data": {
+          "access_id": "Access ID / Client ID",
+          "access_secret": "Access Secret / Client Secret",
+          "region": "Data center region"
+        }
+      },
       "credentials": {
-        "title": "Credentials for {name}",
-        "description": "Enter the Tuya local key for this board (from the Tuya IoT cloud via `tinytuya wizard`). The values are verified by a one-time connect and read.",
+        "title": "Manual credentials for {name}",
+        "description": "Enter the Tuya local key for this board (e.g. from `tinytuya wizard`). The values are verified by a one-time connect and read.",
         "data": {
           "local_key": "Local key",
           "device_id": "Device ID",
@@ -49,11 +87,15 @@
     },
     "error": {
       "cannot_connect": "Couldn't reach the board. Make sure it's powered on with the remote awake and in Bluetooth range, then try again.",
-      "invalid_auth": "Connected, but the handshake failed — the local key is likely wrong or stale (re-pairing the board rotates it). Re-run `tinytuya wizard` and re-enter it."
+      "invalid_auth": "Connected, but the handshake failed — the local key is likely wrong or stale (re-pairing the board rotates it). Re-run `tinytuya wizard` and re-enter it.",
+      "invalid_cloud_auth": "Tuya cloud login failed. Check the Access ID, Access Secret, and region.",
+      "cloud_cannot_connect": "Couldn't reach the Tuya cloud. Check your internet connection and try again.",
+      "cloud_no_devices": "No devices found in this Tuya project. Make sure your Smart Life / Tuya app account is linked to the project."
     },
     "abort": {
       "already_configured": "This board is already configured.",
-      "no_devices_found": "No Tuya e-board found advertising. Power the board on (remote awake) and in range, then retry."
+      "no_devices_found": "No Tuya e-board found advertising. Power the board on (remote awake) and in range, then retry.",
+      "reauth_successful": "Re-authentication successful — the local key was refreshed."
     }
   },
   "entity": {

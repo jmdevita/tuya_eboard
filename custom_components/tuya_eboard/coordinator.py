@@ -22,6 +22,7 @@ from homeassistant.components.bluetooth import (
 from homeassistant.components.bluetooth.active_update_coordinator import (
     ActiveBluetoothDataUpdateCoordinator,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, CoreState, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
@@ -33,6 +34,7 @@ from .const import (
     SETTLE_SECONDS,
 )
 from .tuya_eboard_ble._vendor.tuya_ble import TuyaBLEDeviceCredentials
+from .tuya_eboard_ble._vendor.tuya_ble.exceptions import TuyaBLEError
 from .tuya_eboard_ble.device import TuyaEboardDevice
 from .tuya_eboard_ble.protocol import DataPoint
 
@@ -52,6 +54,7 @@ class TuyaEboardCoordinator(ActiveBluetoothDataUpdateCoordinator[EboardSnapshot]
         self,
         hass: HomeAssistant,
         logger: logging.Logger,
+        entry: ConfigEntry,
         address: str,
         credentials: TuyaBLEDeviceCredentials,
     ) -> None:
@@ -64,6 +67,7 @@ class TuyaEboardCoordinator(ActiveBluetoothDataUpdateCoordinator[EboardSnapshot]
             mode=BluetoothScanningMode.PASSIVE,
             connectable=True,
         )
+        self._entry = entry
         self._credentials = credentials
         self._last_advert: datetime | None = None
         self._present_unsub: CALLBACK_TYPE | None = None
@@ -147,7 +151,15 @@ class TuyaEboardCoordinator(ActiveBluetoothDataUpdateCoordinator[EboardSnapshot]
             service_info.advertisement,
             read_only=True,
         )
-        dps = await device.read_all_dps(settle=SETTLE_SECONDS)
+        try:
+            dps = await device.read_all_dps(settle=SETTLE_SECONDS)
+        except TuyaBLEError:
+            # Connected but the Tuya protocol/decrypt failed -> the local_key is almost
+            # certainly rotated/invalid (board re-paired); start reauth to re-pull it.
+            # Transient connect/timeout errors are NOT TuyaBLEError, so they won't trip
+            # this. async_start_reauth is idempotent, so repeat calls are safe.
+            self._entry.async_start_reauth(self.hass)
+            raise
         if not dps:
             # Empty read -> raise so the coordinator keeps the previous snapshot and
             # marks the poll unsuccessful, rather than blanking every entity.

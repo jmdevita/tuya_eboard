@@ -23,7 +23,7 @@ async def async_setup_entry(
     address: str = entry.data[CONF_ADDRESS]
     credentials = build_credentials(entry.data)
 
-    coordinator = TuyaEboardCoordinator(hass, _LOGGER, address, credentials)
+    coordinator = TuyaEboardCoordinator(hass, _LOGGER, entry, address, credentials)
     entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
