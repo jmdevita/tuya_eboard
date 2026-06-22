@@ -90,14 +90,22 @@ def _list_devices_sync(
     """Blocking: construct the cloud client and list devices."""
     import tinytuya  # imported lazily; declared in manifest requirements
 
-    cloud = tinytuya.Cloud(
-        apiRegion=region, apiKey=access_id, apiSecret=access_secret
-    )
+    try:
+        cloud = tinytuya.Cloud(
+            apiRegion=region, apiKey=access_id, apiSecret=access_secret
+        )
+    except Exception as err:  # noqa: BLE001 — network/transport building the client
+        raise CloudConnError(str(err)) from err
+
     # The constructor performs the token login; a missing token means bad creds/region.
     if not getattr(cloud, "token", None):
         raise CloudAuthError("Tuya cloud login failed (check id/secret/region)")
 
-    result = cloud.getdevices(verbose=False)
+    try:
+        result = cloud.getdevices(verbose=False)
+    except Exception as err:  # noqa: BLE001 — network/transport listing devices
+        raise CloudConnError(str(err)) from err
+
     if isinstance(result, dict):  # tinytuya returns an error dict on failure
         raise CloudConnError(str(result.get("Payload") or result))
     if not isinstance(result, list):

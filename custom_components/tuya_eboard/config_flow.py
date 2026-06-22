@@ -257,8 +257,12 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
             CONF_PRODUCT_NAME: device.name or self._discovery.name or "",
             **self._cloud_creds,
         }
-        if error := await self._async_try_read(data):
-            return self._cloud_form({"base": error})
+        # The cloud key is authoritative (we matched the board by MAC), so only block on
+        # a real key rejection. If the board is merely asleep / out of range now
+        # ("cannot_connect"), create the entry anyway — the coordinator reads it when it
+        # next wakes. (Manual entry stays strict, since a typo'd key must be caught.)
+        if await self._async_try_read(data) == "invalid_auth":
+            return self._cloud_form({"base": "invalid_auth"})
         return self.async_create_entry(
             title=device.name or self._discovery.name or "Tuya E-Board", data=data
         )
@@ -352,6 +356,10 @@ class TuyaEboardConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
                 if device is None:
                     errors["base"] = "cloud_no_devices"
+                elif device.local_key == entry.data.get(CONF_LOCAL_KEY):
+                    # Cloud key == current key, so refreshing won't fix the failure —
+                    # surface it instead of silently reload-looping.
+                    errors["base"] = "key_unchanged"
                 else:
                     return self.async_update_reload_and_abort(
                         entry,

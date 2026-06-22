@@ -90,7 +90,8 @@
       "invalid_auth": "Connected, but the handshake failed — the local key is likely wrong or stale (re-pairing the board rotates it). Re-run `tinytuya wizard` and re-enter it.",
       "invalid_cloud_auth": "Tuya cloud login failed. Check the Access ID, Access Secret, and region.",
       "cloud_cannot_connect": "Couldn't reach the Tuya cloud. Check your internet connection and try again.",
-      "cloud_no_devices": "No devices found in this Tuya project. Make sure your Smart Life / Tuya app account is linked to the project."
+      "cloud_no_devices": "No devices found in this Tuya project. Make sure your Smart Life / Tuya app account is linked to the project.",
+      "key_unchanged": "The cloud returned the same local key the board is already using, so the connection problem is likely something else (board asleep / out of range), not the key."
     },
     "abort": {
       "already_configured": "This board is already configured.",
