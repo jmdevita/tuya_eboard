@@ -32,6 +32,7 @@ from .const import (
     DOMAIN,
     DP_BATTERY,
     DP_ODOMETER,
+    DP_TRIP_DISTANCE,
     DP_VOLTAGE,
     EVENT_RIDE_COMPLETED,
     POLL_INTERVAL_SECONDS,
@@ -51,6 +52,10 @@ class EboardSnapshot:
 
     dps: dict[int, DataPoint]
     last_seen: datetime
+    # Effective last-trip distance (km x10). Normally the board's DP5, but DP5 is wiped
+    # to 0 when the remote power-cycles (e.g. an off/on to sync at home), so this holds
+    # a recovered value across that wipe. See _effective_trip_km10.
+    trip_distance_km10: int | None = None
 
 
 def _dp_int(dps: dict[int, DataPoint], dp_id: int) -> int | None:
@@ -184,7 +189,39 @@ class TuyaEboardCoordinator(ActiveBluetoothDataUpdateCoordinator[EboardSnapshot]
         merged.update({dp.id: dp for dp in dps})
         if previous is not None:
             self._async_fire_ride_event(previous.dps, merged)
-        return EboardSnapshot(dps=merged, last_seen=dt_util.utcnow())
+        return EboardSnapshot(
+            dps=merged,
+            last_seen=dt_util.utcnow(),
+            trip_distance_km10=self._effective_trip_km10(previous, merged),
+        )
+
+    @staticmethod
+    def _effective_trip_km10(
+        previous: EboardSnapshot | None, merged: dict[int, DataPoint]
+    ) -> int | None:
+        """Last-trip distance (km x10), recovered when the board wipes DP5.
+
+        DP5 (mileage_once) is the board's own per-trip distance, but it resets to 0 when
+        the remote is power-cycled - e.g. turning it off then back on to sync at home,
+        which wipes a just-completed ride from the dashboard. When DP5 is 0 we recover:
+
+        * if the cumulative odometer (DP12) advanced since the previous read, a ride
+          happened between reads, so use that delta;
+        * otherwise the odometer is flat (a reconnect/sync, no new riding) - keep the
+          last known trip rather than overwriting it with 0.
+
+        A nonzero DP5 is always trusted as-is.
+        """
+        raw = _dp_int(merged, DP_TRIP_DISTANCE)
+        if raw:  # board reported a real per-trip distance
+            return raw
+        if previous is None:
+            return raw  # first read: nothing to recover from (0 or None)
+        odo_before = _dp_int(previous.dps, DP_ODOMETER)
+        odo_after = _dp_int(merged, DP_ODOMETER)
+        if odo_before is not None and odo_after is not None and odo_after > odo_before:
+            return odo_after - odo_before  # ride between reads
+        return previous.trip_distance_km10  # flat odometer: don't wipe the last trip
 
     @callback
     def _async_fire_ride_event(
