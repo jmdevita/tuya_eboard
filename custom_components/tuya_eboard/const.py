@@ -30,6 +30,7 @@ EVENT_RIDE_COMPLETED: Final = "tuya_eboard_ride_completed"
 
 # DP ids used for ride derivation (kept in sync with sensor.py value_fns).
 DP_BATTERY: Final = 3  # battery_percentage (%)
+DP_TRIP_DISTANCE: Final = 5  # mileage_once (km x10, per-trip; reset/wiped on sleep)
 DP_ODOMETER: Final = 12  # mileage_total (km x10, cumulative)
 DP_VOLTAGE: Final = 20  # voltage_current (V x10)
 

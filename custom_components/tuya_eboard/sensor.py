@@ -82,7 +82,13 @@ SENSORS: tuple[EboardSensorDescription, ...] = (
         device_class=SensorDeviceClass.DISTANCE,
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=_scaled(5, 0.1),  # DP5 mileage_once ÷10 (resets when board sleeps)
+        # DP5 mileage_once ÷10, but recovered by the coordinator when the board wipes it
+        # to 0 on a remote power-cycle (see EboardSnapshot.trip_distance_km10).
+        value_fn=lambda s: (
+            None
+            if s.trip_distance_km10 is None
+            else round(s.trip_distance_km10 * 0.1, 2)
+        ),
     ),
     EboardSensorDescription(
         key="trip_time",
